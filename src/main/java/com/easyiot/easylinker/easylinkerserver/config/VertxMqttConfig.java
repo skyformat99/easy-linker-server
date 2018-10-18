@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class VertxMqttConfig {
-    @Bean
+    //@Bean
     public Verticle runMqttServer(){
       return  MqttServerRunner. run(new VertxMqttServer());
     }
