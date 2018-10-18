@@ -1,7 +1,7 @@
 package com.easyiot.easylinker.easylinkerserver;
 
-import com.easyiot.easylinker.easylinkerserver.client.VertxMqttRemoteClient;
-import com.easyiot.easylinker.easylinkerserver.client.VertxMqttRemoteClientService;
+import com.easyiot.easylinker.easylinkerserver.client.VertXMqttRemoteClient;
+import com.easyiot.easylinker.easylinkerserver.client.VertXMqttRemoteClientService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,14 +13,14 @@ import org.springframework.test.context.junit4.SpringRunner;
 public class EasyLinkerServerApplicationTests {
 
     @Autowired
-    VertxMqttRemoteClientService vertxMqttRemoteClientService;
+    VertXMqttRemoteClientService vertXMqttRemoteClientService;
     @Test
     public void contextLoads() {
-        VertxMqttRemoteClient vertxMqttRemoteClient=new VertxMqttRemoteClient();
+        VertXMqttRemoteClient vertxMqttRemoteClient=new VertXMqttRemoteClient();
         vertxMqttRemoteClient.setId(System.currentTimeMillis());
         vertxMqttRemoteClient.setUsername("username");
         vertxMqttRemoteClient.setPassword("password");
-        vertxMqttRemoteClientService.save(vertxMqttRemoteClient);
+        vertXMqttRemoteClientService.save(vertxMqttRemoteClient);
     }
 
 }

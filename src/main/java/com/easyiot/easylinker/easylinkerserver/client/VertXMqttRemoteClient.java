@@ -7,8 +7,9 @@ import org.springframework.data.annotation.Id;
  * 这个类用来关联状态
  */
 
-public class VertxMqttRemoteClient{
+public class VertXMqttRemoteClient{
     @Id
+
     private Long id;
 
     private String username;

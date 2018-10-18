@@ -14,7 +14,7 @@ import java.util.List;
  * Vertx 实现的mqtt服务器
  */
 @Component
-public class VertxMqttServer extends AbstractVerticle {
+public class VertXMqttServer extends AbstractVerticle {
 
 
     @Override
