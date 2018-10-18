@@ -2,31 +2,41 @@ package com.easyiot.easylinker.easylinkerserver.client;
 
 import org.springframework.data.annotation.Id;
 
+import java.util.Arrays;
+
 /**
  * 持久户化的设备客户端
  * 这个类用来关联状态
  */
 
-public class VertXMqttRemoteClient{
-    @Id
-
-    private Long id;
+public class VertXMqttRemoteClient extends BaseEntity {
 
     private String username;
     private String password;
     private String clientId;
+    private String topics[];
+    private Boolean onLine=false;
+
+    public Boolean getOnLine() {
+        return onLine;
+    }
+
+    public void setOnLine(Boolean onLine) {
+        this.onLine = onLine;
+    }
+
+    public String[] getTopics() {
+        return topics;
+    }
+
+    public void setTopics(String[] topics) {
+        this.topics = topics;
+    }
 
     public String getUsername() {
         return username;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
 
     public void setUsername(String username) {
         this.username = username;
@@ -46,5 +56,16 @@ public class VertXMqttRemoteClient{
 
     public void setClientId(String clientId) {
         this.clientId = clientId;
+    }
+
+    @Override
+    public String toString() {
+        return this.getId() + "|" +
+                this.getClientId() + "|"
+                + this.getUsername() + "|"
+                + this.getPassword() + "|"
+                + Arrays.deepToString(this.getTopics())
+
+                + "|";
     }
 }

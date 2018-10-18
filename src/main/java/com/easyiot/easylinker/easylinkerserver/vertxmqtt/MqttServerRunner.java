@@ -16,6 +16,6 @@ public class MqttServerRunner {
     }
 
     public static void main(String[] args) {
-        run(new VertxMqttServer());
+        run(new VertXMqttServer());
     }
 }
