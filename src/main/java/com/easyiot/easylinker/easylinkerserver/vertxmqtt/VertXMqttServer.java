@@ -5,15 +5,13 @@ import com.easyiot.easylinker.easylinkerserver.client.VertXMqttRemoteClientServi
 import com.easyiot.easylinker.easylinkerserver.config.VertXMqttConfig;
 import io.netty.handler.codec.mqtt.MqttConnectReturnCode;
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Vertx;
-import io.vertx.core.VertxOptions;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.dropwizard.DropwizardMetricsOptions;
-import io.vertx.ext.dropwizard.MetricsService;
+import io.vertx.mqtt.MqttEndpoint;
 import io.vertx.mqtt.MqttServer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+
+import java.util.List;
 
 /**
  * Vertx 实现的mqtt服务器
@@ -34,30 +32,32 @@ public class VertXMqttServer extends AbstractVerticle {
     @Override
     public void start() {
         MqttServer mqttServer = MqttServer.create(vertx);
+        String auth = vertXMqttConfig.getAuth();
+
+        //重启恢复现场
+        System.out.println("重启恢复现场...");
+        List<VertXMqttRemoteClient> vertXMqttRemoteClientList = vertXMqttRemoteClientService.findAllByOnLine(true);
+        for (VertXMqttRemoteClient client : vertXMqttRemoteClientList) {
+            client.setOnLine(false);
+            vertXMqttRemoteClientService.save(client);
+
+        }
+        System.out.println("恢复完毕！");
+
         mqttServer
                 .endpointHandler(endpoint -> {
+                    String username = endpoint.auth().userName();
+                    String password = endpoint.auth().password();
+                    String clientId = endpoint.clientIdentifier();
 
                     // shows main connect info
                     System.out.println("有客户端连接 [" + endpoint.auth().toJson() + "] clientId = " + endpoint.clientIdentifier());
-//
-//
-//                    if (endpoint.will() != null) {
-//                        System.out.println("[will flag = " + endpoint.will().isWillFlag() + " topic = " + endpoint.will().willTopic() + " msg = " + endpoint.will().willMessage() +
-//                                " QoS = " + endpoint.will().willQos() + " isRetain = " + endpoint.will().isWillRetain() + "]");
-//                    }
-//
-//                    System.out.println("[keep alive timeout = " + endpoint.keepAliveTimeSeconds() + "]");
-
                     //1 鉴权 ,初步采用MongoDb进行查库
                     //首先实现通过username
 
                     if (endpoint.auth() != null) {
-                        String username = endpoint.auth().userName();
-                        String password = endpoint.auth().password();
-                        String clientId = endpoint.clientIdentifier();
-                        String auth = vertXMqttConfig.getAuth();
+//
                         //默认开启用户名认证¬
-                        if (auth == null) auth = "username";
                         switch (auth) {
                             //开启用户名密码认证
                             case "username":
@@ -170,7 +170,9 @@ public class VertXMqttServer extends AbstractVerticle {
                      * 这个响应是客户端主动断开产生的
                      */
                     endpoint.disconnectHandler(v -> {
-                        System.out.println("Received disconnect from client");
+                        System.out.println("Connection closed" + endpoint.auth().toJson() + endpoint.clientIdentifier());
+                        VertXMqttRemoteClient vertXMqttRemoteClient;
+                        handler(auth, endpoint, username, password, clientId);
                     });
                     /**
                      * 这个响应是客户端异常断开，比如突然断电
@@ -179,22 +181,12 @@ public class VertXMqttServer extends AbstractVerticle {
                     // handling closing connection
                     endpoint.closeHandler(v -> {
                         System.out.println("Connection closed" + endpoint.auth().toJson() + endpoint.clientIdentifier());
+                        VertXMqttRemoteClient vertXMqttRemoteClient;
+                        handler(auth, endpoint, username, password, clientId);
+
+
                     });
-//
-//                    // handling incoming published messages
-//                    endpoint.publishHandler(message -> {
-//
-//                        System.out.println("Just received message on [" + message.topicName() + "] payload [" + message.payload() + "] with QoS [" + message.qosLevel() + "]");
-//
-//                        if (message.qosLevel() == MqttQoS.AT_LEAST_ONCE) {
-//                            endpoint.publishAcknowledge(message.messageId());
-//                        } else if (message.qosLevel() == MqttQoS.EXACTLY_ONCE) {
-//                            endpoint.publishReceived(message.messageId());
-//                        }
-//
-//                    }).publishReleaseHandler(messageId -> {
-//                        endpoint.publishComplete(messageId);
-//                    });
+
                 })
                 .listen(1883, "0.0.0.0", ar -> {
 
@@ -206,4 +198,49 @@ public class VertXMqttServer extends AbstractVerticle {
                 });
 
     }
+
+    /**
+     * 处理离线事件
+     *
+     * @param auth
+     * @param endpoint
+     * @param username
+     * @param password
+     * @param clientId
+     */
+    private void handler(String auth, MqttEndpoint endpoint, String username, String password, String clientId) {
+        VertXMqttRemoteClient vertXMqttRemoteClient;
+        switch (auth) {
+            case "username":
+                if (!StringUtils.isEmpty(username) && !StringUtils.isEmpty(password)) {
+                    vertXMqttRemoteClient = vertXMqttRemoteClientService.findTopByUsernameAndPassword(username, password);
+
+                    if (vertXMqttRemoteClient != null) {
+                        System.out.println("客户端离线！" + endpoint.auth().toJson());
+                        vertXMqttRemoteClient.setOnLine(false);
+                        vertXMqttRemoteClientService.save(vertXMqttRemoteClient);
+
+                    }
+                }
+
+                break;
+            case "clientId":
+                vertXMqttRemoteClient = vertXMqttRemoteClientService.findTopByClientId(clientId);
+                if (!StringUtils.isEmpty(clientId)) {
+
+                    if (vertXMqttRemoteClient != null) {
+                        System.out.println("客户端离线！" + endpoint.auth().toJson());
+                        vertXMqttRemoteClient.setOnLine(false);
+                        vertXMqttRemoteClientService.save(vertXMqttRemoteClient);
+
+                    }
+                }
+
+                break;
+            default:
+                break;
+        }
+    }
+
+
 }
